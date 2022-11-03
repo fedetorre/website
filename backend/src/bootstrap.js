@@ -13,33 +13,6 @@ async function isFirstRun() {
   return !initHasRun;
 }
 
-async function setPublicPermissions(newPermissions) {
-  // Find the ID of the public role
-  const publicRole = await strapi
-    .query("plugin::users-permissions.role")
-    .findOne({
-      where: {
-        type: "public",
-      },
-    });
-
-  // Create the new permissions and link them to the public role
-  const allPermissionsToCreate = [];
-  Object.keys(newPermissions).map(controller => {
-    const actions = newPermissions[controller];
-    const permissionsToCreate = actions.map(action => {
-      return strapi.query("plugin::users-permissions.permission").create({
-        data: {
-          action: `api::${controller}.${controller}.${action}`,
-          role: publicRole.id,
-        },
-      });
-    });
-    allPermissionsToCreate.push(...permissionsToCreate);
-  });
-  await Promise.all(allPermissionsToCreate);
-}
-
 function getFileSizeInBytes(filePath) {
   const stats = fs.statSync(filePath);
   const fileSizeInBytes = stats["size"];
@@ -197,13 +170,6 @@ async function importLeadFormSubmissionData() {
 }
 
 async function importSeedData() {
-  // Allow read of application content types
-  await setPublicPermissions({
-    global: ["find"],
-    page: ["find", "findOne"],
-    "lead-form-submission": ["create"],
-  });
-
   await strapi.query("plugin::i18n.locale").create({
     data: {
       name: "French (fr)",
